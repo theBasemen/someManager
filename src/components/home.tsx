@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSupabaseListener } from "@/hooks/useSupabaseListener";
 import { createClient } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import { Loader2, CheckCircle, XCircle, Edit, Send } from "lucide-react";
@@ -52,57 +53,116 @@ const Home = () => {
   useEffect(() => {
     if (!flowId) return;
 
-    const subscription = supabase
-      .channel("linkedin_drafts_changes")
+    console.log(
+      "🔌 Setting up Supabase real-time listener in Home for flowId:",
+      flowId,
+    );
+
+    // Create a unique channel name with the flowId to avoid conflicts
+    const channelName = `home_linkedin_drafts_${flowId}`;
+
+    const channel = supabase
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*", // Listen for all events (INSERT, UPDATE, DELETE)
           schema: "public",
           table: "linkedin_drafts",
           filter: `flow_id=eq.${flowId}`,
         },
         (payload) => {
+          console.log(
+            "📡 Home component: Supabase real-time event received:",
+            payload.eventType,
+            payload,
+          );
+
           if (payload.new.text) {
+            console.log(
+              "📝 Home component: Setting post text from real-time:",
+              payload.new.text.substring(0, 50) + "...",
+            );
             setPostText(payload.new.text);
             setEditedText(payload.new.text);
             setProgress(70);
           }
           if (payload.new.image_url) {
+            console.log(
+              "🖼️ Home component: Setting image URL from real-time:",
+              payload.new.image_url,
+            );
             setImageUrl(payload.new.image_url);
             setProgress(100);
             setIsLoading(false);
           }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(
+          `🔔 Home component: Supabase channel ${channelName} status:`,
+          status,
+        );
+      });
 
     // Polling fallback (in case real-time doesn't work)
+    console.log("🔄 Setting up polling fallback in Home for flowId:", flowId);
+
     const pollInterval = setInterval(async () => {
       if (!isLoading) return;
 
-      const { data } = await supabase
-        .from("linkedin_drafts")
-        .select("text, image_url")
-        .eq("flow_id", flowId)
-        .single();
+      console.log("📊 Home component: Polling Supabase for flowId:", flowId);
 
-      if (data) {
-        if (data.text && !postText) {
-          setPostText(data.text);
-          setEditedText(data.text);
-          setProgress(70);
+      try {
+        const { data, error } = await supabase
+          .from("linkedin_drafts")
+          .select("text, image_url")
+          .eq("flow_id", flowId)
+          .single();
+
+        if (error) {
+          console.error("❌ Home component: Polling error:", error);
+          return;
         }
-        if (data.image_url && !imageUrl) {
-          setImageUrl(data.image_url);
-          setProgress(100);
-          setIsLoading(false);
+
+        console.log("📦 Home component: Polling data received:", data);
+
+        if (data) {
+          if (data.text && !postText) {
+            console.log(
+              "📝 Home component: Setting post text from polling:",
+              data.text.substring(0, 50) + "...",
+            );
+            setPostText(data.text);
+            setEditedText(data.text);
+            setProgress(70);
+          }
+          if (data.image_url && !imageUrl) {
+            console.log(
+              "🖼️ Home component: Setting image URL from polling:",
+              data.image_url,
+            );
+            setImageUrl(data.image_url);
+            setProgress(100);
+            setIsLoading(false);
+          }
+        } else {
+          console.log("⚠️ Home component: No data found for flowId:", flowId);
         }
+      } catch (err) {
+        console.error("❌ Home component: Polling error:", err);
       }
     }, 3000);
 
     return () => {
-      subscription.unsubscribe();
+      console.log(
+        `🔌 Home component: Unsubscribing from Supabase channel ${channelName}`,
+      );
+      channel.unsubscribe();
+      console.log(
+        "🛑 Home component: Clearing polling interval for flowId:",
+        flowId,
+      );
       clearInterval(pollInterval);
     };
   }, [flowId, isLoading, postText, imageUrl]);
@@ -111,6 +171,13 @@ const Home = () => {
     e.preventDefault();
     if (!topic || !audience) return;
 
+    // Generate a new flow ID for this request
+    const newFlowId = `flow-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    console.log("🆔 Generated new flowId:", newFlowId);
+
+    // Set the flowId state immediately
+    setFlowId(newFlowId);
+
     setIsLoading(true);
     setProgress(10);
     setPostText("");
@@ -118,6 +185,15 @@ const Home = () => {
     setIsEditing(false);
 
     try {
+      // Create the payload object with flow_id
+      const payload = {
+        topic: topic,
+        audience: audience,
+        flow_id: newFlowId,
+      };
+
+      console.log("📤 Webhook payload being sent:", payload);
+
       const response = await fetch(
         "https://basemen.app.n8n.cloud/webhook/linkedin-start",
         {
@@ -125,15 +201,16 @@ const Home = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            topic,
-            audience,
-          }),
+          body: JSON.stringify(payload),
         },
       );
 
+      // Log the response status
+      console.log("📥 Webhook response status:", response.status);
+
+      // Just log the response for debugging
       const data = await response.json();
-      setFlowId(data.flowId);
+      console.log("Webhook response data:", data);
       setProgress(30);
     } catch (error) {
       console.error("Error starting generation:", error);

@@ -1,61 +1,33 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
 import { Avatar } from "@/components/ui/avatar";
-import { Edit, ThumbsUp, MessageSquare, Repeat2, Send } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { ThumbsUp, MessageSquare, Repeat2, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface PostPreviewProps {
-  flowId?: string;
-  postText?: string;
-  imageUrl?: string | null;
-  isLoading?: boolean;
-  onEdit?: (text: string) => void;
-  onApprove?: (flowId: string, text: string) => void;
-  onCancel?: () => void;
+interface LinkedInPostPreviewProps {
+  postText: string;
+  editedText: string;
+  imageUrl: string;
+  isLoading: boolean;
+  isEditing: boolean;
+  handleEdit: () => void;
+  setEditedText: (text: string) => void;
 }
 
-const PostPreview = ({
-  flowId = "",
-  postText = "",
-  imageUrl = null,
-  isLoading = false,
-  onEdit = () => {},
-  onApprove = () => {},
-  onCancel = () => {},
-}: PostPreviewProps) => {
-  const [editMode, setEditMode] = useState(false);
-  const [editedText, setEditedText] = useState(postText);
-
-  // Update edited text when postText changes (e.g., when it first loads)
-  useEffect(() => {
-    if (postText) {
-      setEditedText(postText);
-    }
-  }, [postText]);
-
-  const handleEditClick = () => {
-    setEditMode(true);
-  };
-
-  const handleSaveEdit = () => {
-    onEdit(editedText);
-    setEditMode(false);
-  };
-
-  const handleApprove = () => {
-    onApprove(flowId, editedText || postText);
-  };
-
+const LinkedInPostPreview: React.FC<LinkedInPostPreviewProps> = ({
+  postText,
+  editedText,
+  imageUrl,
+  isLoading,
+  isEditing,
+  handleEdit,
+  setEditedText,
+}) => {
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-50 p-4 rounded-lg">
-      <h2 className="text-xl font-semibold mb-4">
-        LinkedIn Opslag Forhåndsvisning
-      </h2>
-
-      {/* LinkedIn Post Card */}
-      <Card className="shadow-sm border border-slate-200 overflow-hidden">
+    <div className="w-full bg-white rounded-lg shadow-lg p-6 border border-slate-100">
+      <Card className="shadow-sm border border-slate-200 overflow-hidden max-w-xl mx-auto">
         {/* Company Profile Header */}
         <div className="p-4 flex items-center gap-3 border-b border-slate-100">
           <Avatar className="h-12 w-12 border border-slate-200">
@@ -81,7 +53,7 @@ const PostPreview = ({
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
               </div>
-            ) : editMode ? (
+            ) : isEditing ? (
               <div className="space-y-2">
                 <Textarea
                   value={editedText}
@@ -89,33 +61,35 @@ const PostPreview = ({
                   className="min-h-[120px] w-full"
                   placeholder="Rediger LinkedIn opslagstekst her..."
                 />
-                <Button onClick={handleSaveEdit} size="sm">
+                <Button onClick={handleEdit} size="sm">
                   Gem ændringer
                 </Button>
               </div>
             ) : (
-              <div className="whitespace-pre-wrap text-sm">
-                {postText || "Venter på genereret tekst..."}
+              <div className="whitespace-pre-wrap text-sm min-h-[100px]">
+                {postText || "Dit LinkedIn opslag vil blive vist her..."}
               </div>
             )}
           </div>
 
           {/* Image Preview Section */}
-          {(imageUrl || isLoading) && (
-            <div className="border-t border-slate-100">
-              {isLoading && !imageUrl ? (
-                <Skeleton className="h-48 w-full" />
-              ) : (
-                <div className="max-h-64 overflow-hidden">
-                  <img
-                    src={imageUrl || ""}
-                    alt="LinkedIn post billede"
-                    className="w-full object-cover"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          <div className="border-t border-slate-100">
+            {isLoading && !imageUrl ? (
+              <Skeleton className="h-48 w-full" />
+            ) : imageUrl ? (
+              <div>
+                <img
+                  src={imageUrl}
+                  alt="LinkedIn post billede"
+                  className="w-full object-contain"
+                />
+              </div>
+            ) : (
+              <div className="h-48 w-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm">
+                Billede vil blive vist her
+              </div>
+            )}
+          </div>
 
           {/* LinkedIn Interaction Bar */}
           <div className="border-t border-slate-100 p-2 flex justify-between text-slate-500">
@@ -147,29 +121,8 @@ const PostPreview = ({
           </div>
         </CardContent>
       </Card>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3 mt-6">
-        <Button
-          variant="outline"
-          onClick={handleEditClick}
-          disabled={isLoading || !postText}
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Rediger tekst
-        </Button>
-        <Button
-          onClick={handleApprove}
-          disabled={isLoading || !postText || !imageUrl}
-        >
-          Godkend og offentliggør
-        </Button>
-        <Button variant="destructive" onClick={onCancel}>
-          Annuller
-        </Button>
-      </div>
     </div>
   );
 };
 
-export default PostPreview;
+export default LinkedInPostPreview;
