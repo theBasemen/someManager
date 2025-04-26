@@ -75,17 +75,19 @@ const LinkedInPostPreview: React.FC<LinkedInPostPreviewProps> = ({
           {/* Image Preview Section */}
           <div className="border-t border-slate-100">
             {isLoading && !imageUrl ? (
-              <Skeleton className="h-48 w-full" />
+              <div className="aspect-square w-full">
+                <Skeleton className="h-full w-full" />
+              </div>
             ) : imageUrl ? (
-              <div>
+              <div className="aspect-square w-full relative">
                 <img
                   src={imageUrl}
                   alt="LinkedIn post billede"
-                  className="w-full object-contain"
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               </div>
             ) : (
-              <div className="h-48 w-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm">
+              <div className="aspect-square w-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm">
                 Billede vil blive vist her
               </div>
             )}

@@ -275,16 +275,18 @@ const LinkedInPostGenerator = () => {
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Action Buttons */}
+          {/* Left Column - Form */}
           <div className="space-y-6">
-            <ActionButtons
+            <FormSection
+              topic={topic}
+              audience={audience}
               isLoading={isLoading}
-              postText={postText}
-              imageUrl={imageUrl}
-              isEditing={isEditing}
-              handleEdit={handleEdit}
-              handleApprove={handleApprove}
-              resetForm={resetForm}
+              error={error}
+              success={success}
+              progress={progress}
+              setTopic={setTopic}
+              setAudience={setAudience}
+              handleSubmit={handleSubmit}
             />
           </div>
 
@@ -301,18 +303,16 @@ const LinkedInPostGenerator = () => {
             />
           </div>
 
-          {/* Right Column - Form */}
+          {/* Right Column - Action Buttons */}
           <div className="space-y-6">
-            <FormSection
-              topic={topic}
-              audience={audience}
+            <ActionButtons
               isLoading={isLoading}
-              error={error}
-              success={success}
-              progress={progress}
-              setTopic={setTopic}
-              setAudience={setAudience}
-              handleSubmit={handleSubmit}
+              postText={postText}
+              imageUrl={imageUrl}
+              isEditing={isEditing}
+              handleEdit={handleEdit}
+              handleApprove={handleApprove}
+              resetForm={resetForm}
             />
           </div>
         </div>

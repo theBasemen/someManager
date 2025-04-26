@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { motion } from "framer-motion";
+import SuggestedTopicDropdown from "./SuggestedTopicDropdown";
 
 interface FormSectionProps {
   topic: string;
@@ -31,6 +32,34 @@ const FormSection: React.FC<FormSectionProps> = ({
   setAudience,
   handleSubmit,
 }) => {
+  const [resetDropdown, setResetDropdown] = useState(false);
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = (
+    selectedTopic: string,
+    selectedAudience: string,
+  ) => {
+    setTopic(selectedTopic);
+    setAudience(selectedAudience);
+    setResetDropdown(false);
+  };
+
+  // Reset dropdown when user manually types in the fields
+  const handleManualInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (value: string) => void,
+  ) => {
+    setter(e.target.value);
+    setResetDropdown(true);
+  };
+
+  // Reset the resetDropdown flag after it's been processed
+  useEffect(() => {
+    if (resetDropdown) {
+      setResetDropdown(false);
+    }
+  }, [resetDropdown]);
+
   return (
     <Card className="shadow-md border border-slate-200">
       <CardHeader>
@@ -38,12 +67,17 @@ const FormSection: React.FC<FormSectionProps> = ({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          <SuggestedTopicDropdown
+            onSuggestionSelect={handleSuggestionSelect}
+            resetSelection={resetDropdown}
+          />
+
           <div className="space-y-2">
             <Label htmlFor="topic">Emne</Label>
             <Input
               id="topic"
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onChange={(e) => handleManualInput(e, setTopic)}
               placeholder="F.eks. Bæredygtige events"
               required
               disabled={isLoading}
@@ -54,7 +88,7 @@ const FormSection: React.FC<FormSectionProps> = ({
             <Input
               id="audience"
               value={audience}
-              onChange={(e) => setAudience(e.target.value)}
+              onChange={(e) => handleManualInput(e, setAudience)}
               placeholder="F.eks. Event koordinatorer i København"
               required
               disabled={isLoading}
