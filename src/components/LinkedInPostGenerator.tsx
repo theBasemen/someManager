@@ -180,7 +180,14 @@ const LinkedInPostGenerator = () => {
           .eq("flow_id", flowId)
           .single();
 
-        if (error) throw error;
+        // Handle case where no data exists yet - this is normal during initialization
+        if (error && error.code === "PGRST116") {
+          // No rows returned - this is expected initially, just continue polling
+          return;
+        } else if (error) {
+          // Only throw for other types of errors
+          throw error;
+        }
 
         if (data) {
           if (data.text && !postText) {

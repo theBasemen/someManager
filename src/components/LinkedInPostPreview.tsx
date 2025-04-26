@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { ThumbsUp, MessageSquare, Repeat2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface LinkedInPostPreviewProps {
   postText: string;
@@ -25,6 +26,39 @@ const LinkedInPostPreview: React.FC<LinkedInPostPreviewProps> = ({
   handleEdit,
   setEditedText,
 }) => {
+  const [showProgress, setShowProgress] = useState(false);
+  const [imageProgress, setImageProgress] = useState(0);
+
+  // Control progress bar visibility and animation
+  useEffect(() => {
+    if (isLoading && !imageUrl) {
+      setShowProgress(true);
+
+      // Simulate progress from 0% to 85% over 50 seconds
+      setImageProgress(0);
+      const interval = setInterval(() => {
+        setImageProgress((prev) => {
+          if (prev >= 85) {
+            clearInterval(interval);
+            return 85;
+          }
+          return prev + 1;
+        });
+      }, 588); // ~50 seconds to reach 85%
+
+      return () => clearInterval(interval);
+    } else if (imageUrl) {
+      // Image loaded, complete progress and fade out
+      setImageProgress(100);
+      const timeout = setTimeout(() => {
+        setShowProgress(false);
+      }, 1000);
+
+      return () => clearTimeout(timeout);
+    } else {
+      setShowProgress(false);
+    }
+  }, [isLoading, imageUrl]);
   return (
     <div className="w-full bg-white rounded-lg shadow-lg p-6 border border-slate-100">
       <Card className="shadow-sm border border-slate-200 overflow-hidden max-w-xl mx-auto">
@@ -75,8 +109,21 @@ const LinkedInPostPreview: React.FC<LinkedInPostPreviewProps> = ({
           {/* Image Preview Section */}
           <div className="border-t border-slate-100">
             {isLoading && !imageUrl ? (
-              <div className="aspect-square w-full">
+              <div className="aspect-square w-full relative">
                 <Skeleton className="h-full w-full" />
+                {showProgress && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/5">
+                    <div className="w-3/4 space-y-2">
+                      <Progress
+                        value={imageProgress}
+                        className="h-2 w-full bg-slate-200"
+                      />
+                      <p className="text-xs text-center text-slate-500">
+                        Genererer billede... {Math.round(imageProgress)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : imageUrl ? (
               <div className="aspect-square w-full relative">
@@ -85,6 +132,22 @@ const LinkedInPostPreview: React.FC<LinkedInPostPreviewProps> = ({
                   alt="LinkedIn post billede"
                   className="absolute inset-0 w-full h-full object-contain"
                 />
+                {showProgress && (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/5 transition-opacity duration-500"
+                    style={{ opacity: imageProgress === 100 ? 0 : 1 }}
+                  >
+                    <div className="w-3/4 space-y-2">
+                      <Progress
+                        value={imageProgress}
+                        className="h-2 w-full bg-slate-200"
+                      />
+                      <p className="text-xs text-center text-slate-500">
+                        Genererer billede... {Math.round(imageProgress)}%
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="aspect-square w-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm">
